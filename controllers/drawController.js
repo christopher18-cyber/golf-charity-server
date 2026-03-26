@@ -81,96 +81,95 @@ export async function runDraws(req, res) {
 					.eq("plan_status", "active");
 
 				const activeSubscribers = subscribers || [];
-				if (activeSubscribers.length === 0) {
-					return res.status(400).json({
-						success: false,
-						message: "No active subscribers",
-					});
-				} else {
-					const totalPool = Number(draw.jackpot_pool) / 0.4;
-					const jackpotShare = totalPool * 0.4;
-					const fourMatchShare = totalPool * 0.35;
-					const threeMatchShare = totalPool * 0.25;
+				// if (activeSubscribers.length === 0) {
+				// 	return res.status(400).json({
+				// 		success: false,
+				// 		message: "No active subscribers",
+				// 	});
+				// }
+				const totalPool = Number(draw.jackpot_pool) / 0.4;
+				const jackpotShare = totalPool * 0.4;
+				const fourMatchShare = totalPool * 0.35;
+				const threeMatchShare = totalPool * 0.25;
 
-					const winners = [];
+				const winners = [];
 
-					for (const subscriber of activeSubscribers) {
-						const { data: userScores } = await supabase
-							.from("scores")
-							.select("score")
-							.eq("user_id", subscriber.id);
+				for (const subscriber of activeSubscribers) {
+					const { data: userScores } = await supabase
+						.from("scores")
+						.select("score")
+						.eq("user_id", subscriber.id);
 
-						const userScoreList = userScores || [];
-						const matched = userScoreList.filter((s) =>
-							draw.drawn_numbers.includes(s.score),
-						).length;
+					const userScoreList = userScores || [];
+					const matched = userScoreList.filter((s) =>
+						draw.drawn_numbers.includes(s.score),
+					).length;
 
-						if (matched >= 3) {
-							winners.push({ user_id: subscriber.id, matched });
-						}
+					if (matched >= 3) {
+						winners.push({ user_id: subscriber.id, matched });
 					}
-					const fiveMatches = winners.filter((w) => w.matched === 5);
-					const fourMatches = winners.filter((w) => w.matched === 4);
-					const threeMatches = winners.filter((w) => w.matched === 3);
+				}
+				const fiveMatches = winners.filter((w) => w.matched === 5);
+				const fourMatches = winners.filter((w) => w.matched === 4);
+				const threeMatches = winners.filter((w) => w.matched === 3);
 
-					const fivePrize =
-						fiveMatches.length > 0 ? jackpotShare / fiveMatches.length : 0;
-					const fourPrize =
-						fourMatches.length > 0 ? fourMatchShare / fourMatches.length : 0;
-					const threePrize =
-						threeMatches.length > 0 ? threeMatchShare / threeMatches.length : 0;
+				const fivePrize =
+					fiveMatches.length > 0 ? jackpotShare / fiveMatches.length : 0;
+				const fourPrize =
+					fourMatches.length > 0 ? fourMatchShare / fourMatches.length : 0;
+				const threePrize =
+					threeMatches.length > 0 ? threeMatchShare / threeMatches.length : 0;
 
-					const entries = winners.map((w) => ({
-						draw_id: id,
-						user_id: w.user_id,
-						matched: w.matched,
-						prize_won:
-							w.matched === 5
-								? fivePrize
-								: w.matched === 4
-									? fourPrize
-									: threePrize,
-					}));
-					if (entries.length > 0) {
-						await supabase.from("draw_entries").insert(entries);
-					}
-					const jackpotRolledOver = fiveMatches.length === 0;
-					if (jackpotRolledOver) {
-						const { data: nextDraw } = await supabase
-							.from("draws")
-							.select("*")
-							.eq("status", "pending")
-							.neq("id", id)
-							.order("draw_date", { ascending: true })
-							.limit(1)
-							.single();
-						if (nextDraw) {
-							await supabase
-								.from("draws")
-								.update({
-									jackpot_pool: Number(nextDraw.jackpot_pool) + jackpotShare,
-								})
-								.eq("id", nextDraw.id);
-						}
-					} else {
+				const entries = winners.map((w) => ({
+					draw_id: id,
+					user_id: w.user_id,
+					matched: w.matched,
+					prize_won:
+						w.matched === 5
+							? fivePrize
+							: w.matched === 4
+								? fourPrize
+								: threePrize,
+				}));
+				if (entries.length > 0) {
+					await supabase.from("draw_entries").insert(entries);
+				}
+				const jackpotRolledOver = fiveMatches.length === 0;
+				if (jackpotRolledOver) {
+					const { data: nextDraw } = await supabase
+						.from("draws")
+						.select("*")
+						.eq("status", "pending")
+						.neq("id", id)
+						.order("draw_date", { ascending: true })
+						.limit(1)
+						.single();
+					if (nextDraw) {
 						await supabase
 							.from("draws")
-							.update({ status: "simulated" })
-							.eq("id", id);
-
-						return res.status(200).json({
-							success: true,
-							message: "Draw simulated successfully",
-							data: {
-								drawn_numbers: draw.drawn_numbers,
-								total_winners: draw.winners,
-								five_match_winners: fiveMatches.length,
-								four_match_winners: fourMatches.length,
-								three_match_winners: threeMatches.length,
-								jackpot_rolled_over: jackpotRolledOver,
-							},
-						});
+							.update({
+								jackpot_pool: Number(nextDraw.jackpot_pool) + jackpotShare,
+							})
+							.eq("id", nextDraw.id);
 					}
+				} else {
+					await supabase
+						.from("draws")
+						.update({ status: "simulated" })
+						.eq("id", id);
+
+					return res.status(200).json({
+						success: true,
+						message: "Draw simulated successfully",
+						data: {
+							drawn_numbers: draw.drawn_numbers,
+							total_winners: draw.winners,
+							five_match_winners: fiveMatches.length,
+							four_match_winners: fourMatches.length,
+							three_match_winners: threeMatches.length,
+							jackpot_rolled_over: jackpotRolledOver,
+						},
+					});
 				}
 			}
 		}
