@@ -22,6 +22,13 @@ export async function addScore(req, res) {
 				.eq("user_id", userId)
 				.order("created_at", { ascending: true });
 			const scores = currentScores || [];
+			const isDuplicate = scores.some((s) => s.score === score);
+			if (isDuplicate) {
+				return res.status(400).json({
+					success: false,
+					message: "You already have this score entered",
+				});
+			}
 			if (scores.length >= 5) {
 				const oldest = scores[0];
 				await supabase.from("scores").delete().eq("id", oldest.id);
