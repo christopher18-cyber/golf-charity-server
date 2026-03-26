@@ -1,4 +1,5 @@
 import supabase from "../config/supabase.js";
+import logger from "../utils/logger.js";
 import Joi from "joi";
 
 export async function getMyProfile(req, res) {
