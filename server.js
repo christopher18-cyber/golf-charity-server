@@ -21,11 +21,12 @@ app.use(express.json());
 app.use(helmet());
 
 app.use("/api/auth", authRouter);
-app.use("/api/user", scoreRouter);
-app.use("/api/charity", charityRouter);
+app.use("/api/scores", scoreRouter);
+app.use("/api/charities", charityRouter);
 app.use("/api/winners", winnerRouter);
-app.use("/api/draw", drawRouter);
+app.use("/api/draws", drawRouter);
 app.use("/api/users", userRouter);
+
 app.listen(PORT, () => {
 	logger.info(`Server is listening in the port ${PORT}`);
 });
