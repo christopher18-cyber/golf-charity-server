@@ -135,6 +135,7 @@ export async function runDraws(req, res) {
 					await supabase.from("draw_entries").insert(entries);
 				}
 				const jackpotRolledOver = fiveMatches.length === 0;
+
 				if (jackpotRolledOver) {
 					const { data: nextDraw } = await supabase
 						.from("draws")
@@ -144,6 +145,7 @@ export async function runDraws(req, res) {
 						.order("draw_date", { ascending: true })
 						.limit(1)
 						.single();
+
 					if (nextDraw) {
 						await supabase
 							.from("draws")
@@ -152,25 +154,26 @@ export async function runDraws(req, res) {
 							})
 							.eq("id", nextDraw.id);
 					}
-				} else {
-					await supabase
-						.from("draws")
-						.update({ status: "simulated" })
-						.eq("id", id);
-
-					return res.status(200).json({
-						success: true,
-						message: "Draw simulated successfully",
-						data: {
-							drawn_numbers: draw.drawn_numbers,
-							total_winners: draw.winners,
-							five_match_winners: fiveMatches.length,
-							four_match_winners: fourMatches.length,
-							three_match_winners: threeMatches.length,
-							jackpot_rolled_over: jackpotRolledOver,
-						},
-					});
 				}
+
+				// ✅ Always update status and return response, regardless of jackpot rollover
+				await supabase
+					.from("draws")
+					.update({ status: "simulated" })
+					.eq("id", id);
+
+				return res.status(200).json({
+					success: true,
+					message: "Draw simulated successfully",
+					data: {
+						drawn_numbers: draw.drawn_numbers,
+						total_winners: winners.length,
+						five_match_winners: fiveMatches.length,
+						four_match_winners: fourMatches.length,
+						three_match_winners: threeMatches.length,
+						jackpot_rolled_over: jackpotRolledOver,
+					},
+				});
 			}
 		}
 	} catch (err) {
