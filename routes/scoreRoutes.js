@@ -7,6 +7,6 @@ import {
 } from "../controllers/scoreController.js";
 export const scoreRouter = express.Router();
 
-scoreRouter.post("/add-score", authMiddleware, addScore);
-scoreRouter.get("/get-score", authMiddleware, getMyScores);
-scoreRouter.delete("/delete-score/:id", authMiddleware, deleteScore);
+scoreRouter.post("/", authMiddleware, addScore);
+scoreRouter.get("/", authMiddleware, getMyScores);
+scoreRouter.delete("/:id", authMiddleware, deleteScore);
